@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Daily Report</h1>
+
+    <!-- Completed Work Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Completed Work Orders</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>VIN</th>
+                            <th>PO Number</th>
+                            <th>RO Number</th>
+                            <th>Services</th>
+                            <th>Total Cost</th>
+                            <th>Completed Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in completed_orders %}
+                        <tr>
+                            <td>{{ order.vehicle.make }} {{ order.vehicle.model }} ({{ order.vehicle.year }})</td>
+                            <td>{{ order.vehicle.vin or 'N/A' }}</td>
+                            <td>{{ order.vehicle.po_number or 'N/A' }}</td>
+                            <td>{{ order.vehicle.ro_number or 'N/A' }}</td>
+                            <td>
+                                {% for service in order.services %}
+                                <span class="badge bg-primary">{{ service.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>${{ "%.2f"|format(order.total_cost) }}</td>
+                            <td>{{ order.completed_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- In Progress Work Orders -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">In Progress Work Orders</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>VIN</th>
+                            <th>PO Number</th>
+                            <th>RO Number</th>
+                            <th>Services</th>
+                            <th>Current Phase</th>
+                            <th>Start Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in in_progress_orders %}
+                        <tr>
+                            <td>{{ order.vehicle.make }} {{ order.vehicle.model }} ({{ order.vehicle.year }})</td>
+                            <td>{{ order.vehicle.vin or 'N/A' }}</td>
+                            <td>{{ order.vehicle.po_number or 'N/A' }}</td>
+                            <td>{{ order.vehicle.ro_number or 'N/A' }}</td>
+                            <td>
+                                {% for service in order.services %}
+                                <span class="badge bg-primary">{{ service.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ order.phase|replace('_', ' ')|title }}</td>
+                            <td>{{ order.created_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

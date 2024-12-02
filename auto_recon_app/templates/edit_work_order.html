@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Edit Work Order</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="pending" {% if work_order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="in_progress" {% if work_order.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                <option value="completed" {% if work_order.status == 'completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phase" class="form-label">Current Phase</label>
+                            <select class="form-select" id="phase" name="phase" required>
+                                <option value="body_shop" {% if work_order.phase == 'body_shop' %}selected{% endif %}>Body Shop</option>
+                                <option value="detail" {% if work_order.phase == 'detail' %}selected{% endif %}>Detail</option>
+                                <option value="wheels" {% if work_order.phase == 'wheels' %}selected{% endif %}>Wheels</option>
+                                <option value="pdr" {% if work_order.phase == 'pdr' %}selected{% endif %}>PDR</option>
+                                <option value="photos" {% if work_order.phase == 'photos' %}selected{% endif %}>Photos</option>
+                                <option value="qc" {% if work_order.phase == 'qc' %}selected{% endif %}>Quality Control</option>
+                                <option value="completed" {% if work_order.phase == 'completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+
+                        <h4 class="mt-4 mb-3">Services</h4>
+                        
+                        <!-- Basic Services -->
+                        <div class="mb-4">
+                            <h5>Basic Services</h5>
+                            {% for service in services if service.category in ['Repair', 'Detailing', 'Photography'] %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="services" value="{{ service.id }}"
+                                    id="service{{ service.id }}" {% if service in work_order.services %}checked{% endif %}>
+                                <label class="form-check-label" for="service{{ service.id }}">
+                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Wheels -->
+                        <div class="mb-4">
+                            <h5>Wheels</h5>
+                            {% for service in services if service.category == 'Wheels' %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="services" value="{{ service.id }}"
+                                    id="service{{ service.id }}" {% if service in work_order.services %}checked{% endif %}>
+                                <label class="form-check-label" for="service{{ service.id }}">
+                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Paint Services -->
+                        <div class="mb-4">
+                            <h5>Paint Services</h5>
+                            <!-- Bumpers -->
+                            <h6 class="mt-3">Bumpers</h6>
+                            {% for service in services if service.category == 'Paint' and 'Bumper' in service.name %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="services" value="{{ service.id }}"
+                                    id="service{{ service.id }}" {% if service in work_order.services %}checked{% endif %}>
+                                <label class="form-check-label" for="service{{ service.id }}">
+                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Doors -->
+                            <h6 class="mt-3">Doors</h6>
+                            {% for service in services if service.category == 'Paint' and 'Door' in service.name %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="services" value="{{ service.id }}"
+                                    id="service{{ service.id }}" {% if service in work_order.services %}checked{% endif %}>
+                                <label class="form-check-label" for="service{{ service.id }}">
+                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Quarter Panels -->
+                            <h6 class="mt-3">Quarter Panels</h6>
+                            {% for service in services if service.category == 'Paint' and 'Quarter Panel' in service.name %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="services" value="{{ service.id }}"
+                                    id="service{{ service.id }}" {% if service in work_order.services %}checked{% endif %}>
+                                <label class="form-check-label" for="service{{ service.id }}">
+                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Fenders -->
+                            <h6 class="mt-3">Fenders</h6>
+                            {% for service in services if service.category == 'Paint' and 'Fender' in service.name %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="services" value="{{ service.id }}"
+                                    id="service{{ service.id }}" {% if service in work_order.services %}checked{% endif %}>
+                                <label class="form-check-label" for="service{{ service.id }}">
+                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ work_order.notes or '' }}</textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Update Work Order</button>
+                            <a href="{{ url_for('work_orders') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,4 @@
+mkdir auto_recon_app
+cd auto_recon_app
+python -m venv venv
+pip install flask flask-sqlalchemy pillow python-dotenv flask-login

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Edit Vehicle</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="make" class="form-label">Make</label>
+                            <input type="text" class="form-control" id="make" name="make" value="{{ vehicle.make }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="model" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="model" name="model" value="{{ vehicle.model }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="year" class="form-label">Year</label>
+                            <input type="number" class="form-control" id="year" name="year" value="{{ vehicle.year }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="vin" class="form-label">VIN</label>
+                            <input type="text" class="form-control" id="vin" name="vin" value="{{ vehicle.vin or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="po_number" class="form-label">PO Number</label>
+                            <input type="text" class="form-control" id="po_number" name="po_number" value="{{ vehicle.po_number or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="ro_number" class="form-label">RO Number</label>
+                            <input type="text" class="form-control" id="ro_number" name="ro_number" value="{{ vehicle.ro_number or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="created_date" class="form-label">Date & Time Added</label>
+                            <input type="datetime-local" class="form-control" id="created_date" name="created_date" required
+                                value="{{ vehicle.created_date.strftime('%Y-%m-%dT%H:%M') }}">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Update Vehicle</button>
+                            <a href="{{ url_for('vehicles') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

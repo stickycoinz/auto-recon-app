@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Total Revenue</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(total_revenue) }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-currency-dollar text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Avg. Service Time</h6>
+                        <h3 class="mb-0">{{ "%.1f"|format(avg_service_time) }} days</h3>
+                        <small class="text-muted">Target: 3 days</small>
+                    </div>
+                    <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-speedometer text-info fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Completion Rate</h6>
+                        <h3 class="mb-0">{{ "%.1f"|format(completion_rate) }}%</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-check-circle text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Active Work Orders</h6>
+                        <h3 class="mb-0">{{ total_work_orders - completed_work_orders }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-clipboard-check text-warning fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Monthly Revenue Chart -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Monthly Revenue</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyRevenueChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Distribution Chart -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Service Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="serviceDistributionChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Work in Progress and Service Revenue -->
+<div class="row mb-4">
+    <!-- Work in Progress -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Work in Progress</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="workInProgressChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Revenue -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Revenue by Service</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="serviceRevenueChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <!-- Recent Orders -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Work Orders</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Vehicle</th>
+                                <th>Phase</th>
+                                <th>Services</th>
+                                <th>Created</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>#{{ order.id }}</td>
+                                <td>{{ order.vehicle.make }} {{ order.vehicle.model }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if order.phase == 'completed' else 'primary' }}">
+                                        {{ order.phase|replace('_', ' ')|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% for service in order.services %}
+                                    <span class="badge bg-secondary">{{ service.name }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>{{ order.created_date.strftime('%Y-%m-%d') }}</td>
+                                <td>${{ "%.2f"|format(order.total_cost or 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Chart.js defaults
+    Chart.defaults.color = '#6c757d';
+    Chart.defaults.font.size = 13;
+    Chart.defaults.font.family = "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif";
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#6c757d',
+                    font: {
+                        size: 14,
+                        weight: '600'
+                    }
+                }
+            }
+        }
+    };
+
+    // Prepare data from Flask
+    const monthlyRevenueData = {
+        labels: JSON.parse('{{ monthly_revenue.keys()|list|tojson|safe }}'),
+        values: JSON.parse('{{ monthly_revenue.values()|list|tojson|safe }}')
+    };
+
+    const serviceData = {
+        labels: JSON.parse('{{ service_counts.keys()|list|tojson|safe }}'),
+        values: JSON.parse('{{ service_counts.values()|list|tojson|safe }}')
+    };
+
+    const workInProgressData = {
+        labels: JSON.parse('{{ work_in_progress.keys()|list|tojson|safe }}'),
+        values: JSON.parse('{{ work_in_progress.values()|list|tojson|safe }}')
+    };
+
+    const serviceRevenueData = {
+        labels: JSON.parse('{{ service_revenue.keys()|list|tojson|safe }}'),
+        values: JSON.parse('{{ service_revenue.values()|list|tojson|safe }}')
+    };
+
+    // Monthly Revenue Chart
+    const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+    new Chart(monthlyRevenueCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyRevenueData.labels,
+            datasets: [{
+                label: 'Monthly Revenue',
+                data: monthlyRevenueData.values,
+                borderColor: '#2196f3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Service Distribution Chart
+    const serviceDistributionCtx = document.getElementById('serviceDistributionChart').getContext('2d');
+    new Chart(serviceDistributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: serviceData.labels,
+            datasets: [{
+                data: serviceData.values,
+                backgroundColor: [
+                    '#2196f3',
+                    '#4caf50',
+                    '#ff9800',
+                    '#e91e63',
+                    '#9c27b0',
+                    '#00bcd4'
+                ]
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Work in Progress Chart
+    const workInProgressCtx = document.getElementById('workInProgressChart').getContext('2d');
+    new Chart(workInProgressCtx, {
+        type: 'bar',
+        data: {
+            labels: workInProgressData.labels,
+            datasets: [{
+                label: 'Vehicles',
+                data: workInProgressData.values,
+                backgroundColor: '#2196f3'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Service Revenue Chart
+    const serviceRevenueCtx = document.getElementById('serviceRevenueChart').getContext('2d');
+    new Chart(serviceRevenueCtx, {
+        type: 'bar',
+        data: {
+            labels: serviceRevenueData.labels,
+            datasets: [{
+                label: 'Revenue',
+                data: serviceRevenueData.values,
+                backgroundColor: '#4caf50'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

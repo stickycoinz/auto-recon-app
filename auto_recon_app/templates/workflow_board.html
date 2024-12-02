@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Search and Phase Selection -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="vin" class="form-label">
+                                <i class="bi bi-search me-1"></i>Search by VIN
+                            </label>
+                            <input type="text" class="form-control" id="vin" name="vin" 
+                                value="{{ search_vin }}" placeholder="Enter VIN number">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="days_old" class="form-label">
+                                <i class="bi bi-calendar me-1"></i>Age Filter (days)
+                            </label>
+                            <input type="number" class="form-control" id="days_old" name="days_old" 
+                                value="{{ days_old }}" min="0" placeholder="Enter number of days">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="current_phase" class="form-label">
+                                <i class="bi bi-funnel me-1"></i>Current Phase
+                            </label>
+                            <select class="form-select" id="current_phase" name="current_phase">
+                                <option value="">All Phases</option>
+                                <option value="body_shop" {% if current_phase == 'body_shop' %}selected{% endif %}>Body Shop</option>
+                                <option value="detail" {% if current_phase == 'detail' %}selected{% endif %}>Detail</option>
+                                <option value="wheels" {% if current_phase == 'wheels' %}selected{% endif %}>Wheels</option>
+                                <option value="pdr" {% if current_phase == 'pdr' %}selected{% endif %}>PDR</option>
+                                <option value="photos" {% if current_phase == 'photos' %}selected{% endif %}>Photos</option>
+                                <option value="qc" {% if current_phase == 'qc' %}selected{% endif %}>Quality Control</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search me-1"></i>Search
+                                </button>
+                                <a href="{{ url_for('workflow_board') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>Clear Filters
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h5 class="text-muted mb-1">Total Active Orders</h5>
+                            <h3 class="mb-0">{{ total_orders }}</h3>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="text-muted mb-1">Average Age</h5>
+                            <h3 class="mb-0">{{ "%.1f"|format(avg_age) }} days</h3>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="text-muted mb-1">Orders by Phase</h5>
+                            <div class="d-flex justify-content-center gap-3">
+                                {% for phase_id, phase in phases.items() %}
+                                {% if phase_id != 'completed' %}
+                                <div class="text-center">
+                                    <small class="d-block text-muted">{{ phase.name }}</small>
+                                    <span class="badge bg-primary">{{ phase.orders|length }}</span>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Orders -->
+    <div class="row">
+        {% set current_phase = request.args.get('current_phase', '') %}
+        {% for phase_id, phase in phases.items() %}
+        {% if phase_id != 'completed' and (not current_phase or current_phase == phase_id) %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-kanban me-2"></i>{{ phase.name }}
+                        <span class="badge bg-secondary ms-2">{{ phase.orders|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if phase.orders %}
+                    <div class="row">
+                        {% for order in phase.orders %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100" style="position: relative; overflow: visible;">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-subtitle text-muted">Work Order #{{ order.id }}</h6>
+                                        <span class="badge bg-{{ 'success' if order.phase == 'completed' else 'warning' if order.phase != 'completed' else 'secondary' }}">
+                                            {{ order.phase|replace('_', ' ')|title }}
+                                        </span>
+                                    </div>
+                                    <p class="card-text">
+                                        <i class="bi bi-car-front me-2"></i>{{ order.vehicle.make }} {{ order.vehicle.model }} ({{ order.vehicle.year }})<br>
+                                        <i class="bi bi-tag me-2"></i>{{ order.vehicle.vin or 'No VIN' }}<br>
+                                        <i class="bi bi-receipt me-2"></i>PO: {{ order.vehicle.po_number or 'N/A' }} | RO: {{ order.vehicle.ro_number or 'N/A' }}<br>
+                                        <i class="bi bi-calendar me-2"></i>{{ order.created_date.strftime('%Y-%m-%d') }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <a href="{{ url_for('view_work_order', work_order_id=order.id) }}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye me-1"></i>View
+                                        </a>
+                                        <div class="dropdown" style="position: relative;">
+                                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="moveOrder{{ order.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-arrow-right me-1"></i>Move To
+                                            </button>
+                                            <div class="dropdown-menu" style="position: absolute; inset: auto auto 0px 0px; transform: translate3d(0px, -40px, 0px);" data-popper-placement="top-start">
+                                                {% for target_phase_id, target_phase in phases.items() %}
+                                                {% if target_phase_id != phase_id and target_phase_id != 'completed' %}
+                                                <form method="POST" action="{{ url_for('update_work_order_phase', work_order_id=order.id) }}" style="display: block;">
+                                                    <input type="hidden" name="phase" value="{{ target_phase_id }}">
+                                                    <button type="submit" class="dropdown-item">
+                                                        <i class="bi bi-arrow-right-circle me-1"></i>{{ target_phase.name }}
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                                {% endfor %}
+                                                <div class="dropdown-divider"></div>
+                                                <form method="POST" action="{{ url_for('update_work_order_phase', work_order_id=order.id) }}" style="display: block;">
+                                                    <input type="hidden" name="phase" value="completed">
+                                                    <button type="submit" class="dropdown-item text-success">
+                                                        <i class="bi bi-check-circle me-1"></i>Mark Completed
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">
+                        <i class="bi bi-inbox me-2"></i>No work orders in this phase
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize all dropdowns
+        var dropdowns = document.querySelectorAll('.dropdown-toggle');
+        
+        dropdowns.forEach(function(dropdown) {
+            var menu = dropdown.nextElementSibling;
+            
+            // Show dropdown on hover
+            dropdown.addEventListener('mouseenter', function() {
+                menu.classList.add('show');
+            });
+            
+            // Handle click
+            dropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                menu.classList.toggle('show');
+            });
+            
+            // Handle menu hover
+            menu.addEventListener('mouseenter', function() {
+                this.classList.add('show');
+            });
+            
+            menu.addEventListener('mouseleave', function() {
+                this.classList.remove('show');
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', function() {
+                menu.classList.remove('show');
+            });
+            
+            // Prevent dropdown from closing when clicking inside
+            menu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+    });
+</script>
+{% endblock %} 
