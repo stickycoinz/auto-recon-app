@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -22,6 +21,9 @@ wheels/
 *.egg
 
 # Virtual Environment
+.env
+.venv
+env/
 venv/
 ENV/
 
@@ -30,13 +32,14 @@ ENV/
 .vscode/
 *.swp
 *.swo
+.DS_Store
 
-# Database
+# Flask
+instance/
+.webassets-cache
 *.db
-*.sqlite3
 
-# Environment variables
-.env
-
-# Logs
-*.log 
+# Project specific
+auto_recon_app/static/uploads/
+logs/
+*.log
