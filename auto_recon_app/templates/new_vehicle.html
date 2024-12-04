@@ -1,73 +1,336 @@
 {% extends "base.html" %}
 
+{% block title %}Add New Vehicle - Auto Recon{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Add New Vehicle</h1>
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <h2>Add New Vehicle</h2>
     </div>
+</div>
 
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">Vehicle Details</h5>
-        </div>
-        <div class="card-body">
-            <form method="POST" id="vehicleForm">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="make" class="form-label">Make</label>
-                        <input type="text" class="form-control" id="make" name="make" required>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('new_vehicle') }}" id="newVehicleForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="make" class="form-label">Make</label>
+                            <input type="text" class="form-control" id="make" name="make" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="model" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="model" name="model" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="year" class="form-label">Year</label>
+                            <input type="number" class="form-control" id="year" name="year" 
+                                   min="1900" max="{{ current_year }}" required>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="model" class="form-label">Model</label>
-                        <input type="text" class="form-control" id="model" name="model" required>
-                    </div>
-                </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="year" class="form-label">Year</label>
-                        <input type="number" class="form-control" id="year" name="year" required>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="vin" class="form-label">VIN</label>
+                            <input type="text" class="form-control" id="vin" name="vin" maxlength="17">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="stock_number" class="form-label">Stock Number</label>
+                            <input type="text" class="form-control" id="stock_number" name="stock_number">
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="vin" class="form-label">VIN</label>
-                        <input type="text" class="form-control" id="vin" name="vin" maxlength="17">
-                    </div>
-                </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Services Required</label>
-                    <div class="row g-3">
-                        {% for service in services %}
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" 
-                                       id="service_{{ service.id }}" 
-                                       name="services" 
-                                       value="{{ service.id }}">
-                                <label class="form-check-label" for="service_{{ service.id }}">
-                                    {{ service.name }} - ${{ "%.2f"|format(service.price) }}
-                                </label>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="po_number" class="form-label">PO Number</label>
+                            <input type="text" class="form-control" id="po_number" name="po_number">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="ro_number" class="form-label">RO Number</label>
+                            <input type="text" class="form-control" id="ro_number" name="ro_number">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="dealership" class="form-label">Dealership</label>
+                            <select class="form-select" id="dealership" name="dealership_id" required>
+                                <option value="">Select Dealership</option>
+                                {% for dealership in dealerships %}
+                                <option value="{{ dealership.id }}">{{ dealership.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="created_date" class="form-label">Created Date</label>
+                            <input type="datetime-local" class="form-control" id="created_date" name="created_date" 
+                                   value="{{ current_datetime }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    {% if services %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Services</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="serviceSearch" 
+                                   placeholder="Search services by name or tag...">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="service-total alert alert-info mb-3" style="display: none;">
+                            Total Cost: $<span id="totalCost">0.00</span>
+                        </div>
+
+                        {% set categories = services|groupby('category') %}
+                        {% for category, services_in_category in categories %}
+                        <div class="mb-3 service-category" data-category="{{ category }}">
+                            <h6 class="text-muted mb-2">{{ category|replace('_', ' ')|title }}</h6>
+                            <div class="row">
+                                {% for service in services_in_category %}
+                                <div class="col-md-6 mb-2 service-item" 
+                                     data-name="{{ service.name|lower }}" 
+                                     data-tags="{{ service.tags|lower if service.tags }}"
+                                     data-category="{{ service.category|lower }}">
+                                    <div class="card">
+                                        <div class="card-body p-2">
+                                            <div class="form-check">
+                                                {% if service.is_quantity_based %}
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <input class="form-check-input service-checkbox" type="checkbox" 
+                                                               name="services" value="{{ service.id }}" 
+                                                               id="service{{ service.id }}"
+                                                               data-is-quantity="true"
+                                                               data-service-id="{{ service.id }}"
+                                                               data-max-quantity="{{ service.max_quantity }}">
+                                                        <label class="form-check-label" for="service{{ service.id }}">
+                                                            {{ service.name }}
+                                                            <small class="text-muted d-block service-price" 
+                                                                   data-service-id="{{ service.id }}">
+                                                                Loading price...
+                                                            </small>
+                                                        </label>
+                                                    </div>
+                                                    <div class="quantity-selector" style="display: none;">
+                                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                                            <button class="btn btn-outline-secondary quantity-decrease" type="button">-</button>
+                                                            <input type="number" class="form-control text-center quantity-input"
+                                                                   name="quantity_{{ service.id }}" value="1" min="1" 
+                                                                   max="{{ service.max_quantity }}" readonly>
+                                                            <button class="btn btn-outline-secondary quantity-increase" type="button">+</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% else %}
+                                                <input class="form-check-input service-checkbox" type="checkbox" 
+                                                       name="services" value="{{ service.id }}" 
+                                                       id="service{{ service.id }}"
+                                                       data-service-id="{{ service.id }}">
+                                                <label class="form-check-label" for="service{{ service.id }}">
+                                                    {{ service.name }}
+                                                    <small class="text-muted d-block service-price" 
+                                                           data-service-id="{{ service.id }}">
+                                                        Loading price...
+                                                    </small>
+                                                </label>
+                                                {% endif %}
+                                                {% if service.description %}
+                                                <small class="text-muted d-block">{{ service.description }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
-                        {% if loop.index % 3 == 0 %}
-                        </div><div class="row g-3">
-                        {% endif %}
                         {% endfor %}
                     </div>
-                </div>
+                    {% endif %}
 
-                <div class="mb-3">
-                    <label for="created_date" class="form-label">Date Created</label>
-                    <input type="datetime-local" class="form-control" id="created_date" name="created_date" 
-                           value="{{ get_current_time().strftime('%Y-%m-%dT%H:%M') }}" required>
-                </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Add Vehicle</button>
+                        <a href="{{ url_for('vehicles') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">Create Vehicle and Work Order</button>
-                    <a href="{{ url_for('vehicles') }}" class="btn btn-secondary">Cancel</a>
-                </div>
-            </form>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Help</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>VIN:</strong> Vehicle Identification Number (17 characters)</p>
+                <p><strong>Stock Number:</strong> Dealership's internal reference number</p>
+                <p><strong>PO Number:</strong> Purchase Order number</p>
+                <p><strong>RO Number:</strong> Repair Order number</p>
+                <p><strong>Services:</strong> Select all services that will be performed on this vehicle</p>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default created_date to current date and time
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('created_date').value = now.toISOString().slice(0, 16);
+
+    // Service search functionality
+    const searchInput = document.getElementById('serviceSearch');
+    const clearSearch = document.getElementById('clearSearch');
+    const serviceItems = document.querySelectorAll('.service-item');
+    const totalCostDisplay = document.getElementById('totalCost');
+    const serviceTotalDiv = document.querySelector('.service-total');
+    const dealershipSelect = document.getElementById('dealership');
+    const servicePrices = {};
+
+    async function fetchServicePrices(dealershipId) {
+        try {
+            const response = await fetch(`/api/services/prices?dealership_id=${dealershipId}`);
+            if (!response.ok) throw new Error('Failed to fetch prices');
+            const prices = await response.json();
+            Object.assign(servicePrices, prices);
+            
+            // Update all service price displays
+            document.querySelectorAll('.service-price').forEach(priceElement => {
+                const serviceId = priceElement.dataset.serviceId;
+                const price = servicePrices[serviceId] || 0;
+                priceElement.textContent = `($${price.toFixed(2)}${priceElement.closest('.form-check').querySelector('[data-is-quantity="true"]') ? ' each' : ''})`;
+            });
+            
+            // Update total cost if any services are selected
+            updateTotalCost();
+        } catch (error) {
+            console.error('Error fetching service prices:', error);
+        }
+    }
+
+    dealershipSelect.addEventListener('change', function() {
+        const dealershipId = this.value;
+        if (dealershipId) {
+            fetchServicePrices(dealershipId);
+        } else {
+            // Reset prices if no dealership selected
+            document.querySelectorAll('.service-price').forEach(el => {
+                el.textContent = 'Select dealership...';
+            });
+            updateTotalCost();
+        }
+    });
+
+    function updateTotalCost() {
+        let total = 0;
+        const dealershipId = dealershipSelect.value;
+        
+        if (!dealershipId) {
+            totalCostDisplay.textContent = '0.00';
+            serviceTotalDiv.style.display = 'none';
+            return;
+        }
+
+        document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
+            const serviceId = checkbox.dataset.serviceId;
+            const price = servicePrices[serviceId] || 0;
+            
+            if (checkbox.dataset.isQuantity === 'true') {
+                const quantity = parseInt(checkbox.closest('.card-body').querySelector('.quantity-input').value);
+                total += price * quantity;
+            } else {
+                total += price;
+            }
+        });
+        
+        totalCostDisplay.textContent = total.toFixed(2);
+        serviceTotalDiv.style.display = total > 0 ? 'block' : 'none';
+    }
+
+    function filterServices(searchTerm) {
+        searchTerm = searchTerm.toLowerCase();
+        serviceItems.forEach(item => {
+            const name = item.dataset.name;
+            const tags = item.dataset.tags;
+            const category = item.dataset.category;
+            const matches = name.includes(searchTerm) || 
+                          (tags && tags.includes(searchTerm)) || 
+                          category.includes(searchTerm);
+            item.style.display = matches ? '' : 'none';
+        });
+
+        // Show/hide category headers based on visible services
+        document.querySelectorAll('.service-category').forEach(category => {
+            const hasVisibleServices = [...category.querySelectorAll('.service-item')]
+                .some(item => item.style.display !== 'none');
+            category.style.display = hasVisibleServices ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('input', (e) => filterServices(e.target.value));
+    clearSearch.addEventListener('click', () => {
+        searchInput.value = '';
+        filterServices('');
+    });
+
+    // Quantity selector functionality
+    document.querySelectorAll('.service-checkbox[data-is-quantity="true"]').forEach(checkbox => {
+        const container = checkbox.closest('.card-body');
+        const quantitySelector = container.querySelector('.quantity-selector');
+        const quantityInput = container.querySelector('.quantity-input');
+        const decreaseBtn = container.querySelector('.quantity-decrease');
+        const increaseBtn = container.querySelector('.quantity-increase');
+
+        checkbox.addEventListener('change', function() {
+            quantitySelector.style.display = this.checked ? 'block' : 'none';
+            updateTotalCost();
+        });
+
+        decreaseBtn.addEventListener('click', () => {
+            const currentValue = parseInt(quantityInput.value);
+            if (currentValue > 1) {
+                quantityInput.value = currentValue - 1;
+                updateTotalCost();
+            }
+        });
+
+        increaseBtn.addEventListener('click', () => {
+            const currentValue = parseInt(quantityInput.value);
+            const maxValue = parseInt(quantityInput.getAttribute('max'));
+            if (currentValue < maxValue) {
+                quantityInput.value = currentValue + 1;
+                updateTotalCost();
+            }
+        });
+    });
+
+    // Regular service checkboxes
+    document.querySelectorAll('.service-checkbox:not([data-is-quantity="true"])').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalCost);
+    });
+
+    // Form submission validation
+    document.getElementById('newVehicleForm').addEventListener('submit', function(e) {
+        const dealershipId = dealershipSelect.value;
+        if (!dealershipId) {
+            e.preventDefault();
+            alert('Please select a dealership before adding a vehicle.');
+            return;
+        }
+    });
+});
+</script>
 {% endblock %} 

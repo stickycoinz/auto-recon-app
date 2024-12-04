@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.3;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .metric-card {
+            flex: 1;
+            margin: 0 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #198754;  /* Bootstrap success color */
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
+        }
+        th {
+            background-color: #198754;
+            color: white;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 5px;
+            background-color: #198754;
+            color: white;
+            border-radius: 3px;
+            font-size: 8pt;
+            margin: 1px;
+        }
+        h2 {
+            font-size: 12pt;
+            margin: 15px 0 10px 0;
+            color: #198754;
+        }
+        .section-header {
+            background-color: #198754;
+            color: white;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="color: #198754;">Auto Recon Daily Report</h1>
+        <p>Generated on {{ now().strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+
+    <div class="section-header">Speed to Market Metrics</div>
+    <div class="metrics">
+        <div class="metric-card">
+            <h3>Overall Average</h3>
+            <h2 style="color: white;">{{ "%.1f"|format(avg_completion_time) }} days</h2>
+        </div>
+        <div class="metric-card">
+            <h3>3-Day Average</h3>
+            <h2 style="color: white;">{{ "%.1f"|format(three_day_average) }} days</h2>
+        </div>
+        <div class="metric-card">
+            <h3>Current Average</h3>
+            <h2 style="color: white;">{{ "%.1f"|format(current_avg_time) }} days</h2>
+        </div>
+    </div>
+
+    <div class="section-header">Completed Vehicles</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle</th>
+                <th>VIN</th>
+                <th>PO/RO</th>
+                <th>Services</th>
+                <th>Days</th>
+                <th>Completed</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in completed_orders %}
+            <tr>
+                <td>{{ order.vehicle.make }} {{ order.vehicle.model }} ({{ order.vehicle.year }})</td>
+                <td>{{ order.vehicle.vin or 'N/A' }}</td>
+                <td>{{ order.vehicle.po_number or '' }}/{{ order.vehicle.ro_number or '' }}</td>
+                <td>
+                    {% for service in order.services %}
+                    <span class="badge">{{ service.name }}</span>
+                    {% endfor %}
+                </td>
+                <td>{{ ((order.completed_date - order.created_date).days) }}</td>
+                <td>{{ order.completed_date.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-header">In Progress Vehicles</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle</th>
+                <th>VIN</th>
+                <th>PO/RO</th>
+                <th>Services</th>
+                <th>Phase</th>
+                <th>Days</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in in_progress_orders %}
+            {% set days_in_progress = ((now() - order.created_date).days) %}
+            <tr>
+                <td>{{ order.vehicle.make }} {{ order.vehicle.model }} ({{ order.vehicle.year }})</td>
+                <td>{{ order.vehicle.vin or 'N/A' }}</td>
+                <td>{{ order.vehicle.po_number or '' }}/{{ order.vehicle.ro_number or '' }}</td>
+                <td>
+                    {% for service in order.services %}
+                    <span class="badge">{{ service.name }}</span>
+                    {% endfor %}
+                </td>
+                <td>{{ order.phase|replace('_', ' ')|title }}</td>
+                <td>{{ days_in_progress }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html> 

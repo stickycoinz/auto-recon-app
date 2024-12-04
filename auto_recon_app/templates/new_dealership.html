@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Add New Dealership</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Dealership Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email_primary" class="form-label">Primary Email</label>
+                            <input type="email" class="form-control" id="email_primary" name="email_primary">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email_service" class="form-label">Service Department Email</label>
+                            <input type="email" class="form-control" id="email_service" name="email_service">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email_parts" class="form-label">Parts Department Email</label>
+                            <input type="email" class="form-control" id="email_parts" name="email_parts">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email_billing" class="form-label">Billing Department Email</label>
+                            <input type="email" class="form-control" id="email_billing" name="email_billing">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Add Dealership</button>
+                            <a href="{{ url_for('dealerships') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

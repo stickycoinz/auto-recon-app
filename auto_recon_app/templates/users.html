@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Auto Recon{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>User Management</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus me-1"></i>Add New User
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Dealerships</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role|title }}</td>
+                        <td>
+                            {% for dealership in user.dealerships %}
+                            <span class="badge bg-info">{{ dealership.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-warning" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editUserModal{{ user.id }}">
+                                    <i class="bi bi-pencil me-1"></i>Edit
+                                </button>
+                                <form action="{{ url_for('toggle_user_status', user_id=user.id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-{{ 'danger' if user.is_active else 'success' }}">
+                                        <i class="bi bi-{{ 'x-lg' if user.is_active else 'check-lg' }} me-1"></i>
+                                        {{ 'Deactivate' if user.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('add_user') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, underscore and dash allowed"
+                                       required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           minlength="8" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Minimum 8 characters</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Role</label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="corporate">Corporate</option>
+                                    <option value="district_manager">District Manager</option>
+                                    <option value="ground_manager" selected>Ground Manager</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label d-block">Dealerships</label>
+                                <div class="dealerships-list" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="mb-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleAllDealerships(this)">
+                                            Select All
+                                        </button>
+                                    </div>
+                                    {% for dealership in dealerships %}
+                                    <div class="form-check">
+                                        <input class="form-check-input dealership-checkbox" type="checkbox" 
+                                               name="dealerships" value="{{ dealership.id }}"
+                                               id="newDealership{{ dealership.id }}">
+                                        <label class="form-check-label" for="newDealership{{ dealership.id }}">
+                                            {{ dealership.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modals -->
+{% for user in users %}
+<div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User: {{ user.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('edit_user', user_id=user.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email{{ user.id }}" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email{{ user.id }}" 
+                                       name="email" value="{{ user.email }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="role{{ user.id }}" class="form-label">Role</label>
+                                <select class="form-select" id="role{{ user.id }}" name="role" required>
+                                    <option value="corporate" {% if user.role == 'corporate' %}selected{% endif %}>Corporate</option>
+                                    <option value="district_manager" {% if user.role == 'district_manager' %}selected{% endif %}>District Manager</option>
+                                    <option value="ground_manager" {% if user.role == 'ground_manager' %}selected{% endif %}>Ground Manager</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label d-block">Dealerships</label>
+                                <div class="dealerships-list" style="max-height: 300px; overflow-y: auto;">
+                                    {% for dealership in dealerships %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="dealerships" value="{{ dealership.id }}"
+                                               id="dealership{{ user.id }}{{ dealership.id }}"
+                                               {% if dealership in user.dealerships %}checked{% endif %}>
+                                        <label class="form-check-label" for="dealership{{ user.id }}{{ dealership.id }}">
+                                            {{ dealership.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% block scripts %}
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+function toggleAllDealerships(button) {
+    const checkboxes = button.closest('.dealerships-list').querySelectorAll('.dealership-checkbox');
+    const isChecked = button.textContent.trim() === 'Select All';
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+    });
+    
+    button.textContent = isChecked ? 'Deselect All' : 'Select All';
+}
+</script>
+{% endblock %}
+
+<style>
+.modal {
+    z-index: 1050;
+}
+
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal-dialog {
+    max-width: 800px;
+}
+
+.dealerships-list {
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: var(--light-bg);
+}
+
+.dealerships-list .form-check {
+    margin-bottom: 0.5rem;
+}
+
+.dealerships-list .form-check:last-child {
+    margin-bottom: 0;
+}
+
+.badge {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+    margin: 0.1rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.input-group .btn {
+    z-index: 0;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Ground Floor Dashboard - Auto Recon{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Today's Completion Rate</h6>
+                    <h2 class="card-title">{{ completed_today }} vehicles</h2>
+                    <p class="card-text">
+                        Daily Target: {{ daily_target }} vehicles<br>
+                        <span class="{% if completed_today >= daily_target %}text-success{% else %}text-warning{% endif %}">
+                            {{ "%.1f"|format((completed_today / daily_target * 100) if daily_target > 0 else 0) }}% of target
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Average Completion Time</h6>
+                    <h2 class="card-title">{{ "%.1f"|format(avg_completion_time) }} days</h2>
+                    <p class="card-text">
+                        Target: 3.0 days<br>
+                        <span class="{% if avg_completion_time <= 3 %}text-success{% else %}text-danger{% endif %}">
+                            {{ "%.1f"|format(avg_completion_time - 3)|abs }} days {{ "under" if avg_completion_time <= 3 else "over" }} target
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Active Vehicles</h6>
+                    <h2 class="card-title">{{ active_vehicles }}</h2>
+                    <p class="card-text">
+                        <span class="text-danger">{{ vehicles_over_3days }} over 3 days</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Urgent Attention Required -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">⚠️ Urgent Attention Required</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle</th>
+                                    <th>Current Phase</th>
+                                    <th>Days in Phase</th>
+                                    <th>Total Days</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vehicle in urgent_vehicles %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ vehicle.stock_number }}</strong><br>
+                                        <small class="text-muted">{{ vehicle.make }} {{ vehicle.model }}</small>
+                                    </td>
+                                    <td>{{ vehicle.current_phase|title }}</td>
+                                    <td>
+                                        <span class="text-danger">{{ vehicle.days_in_phase }} days</span>
+                                    </td>
+                                    <td>{{ vehicle.total_days }} days</td>
+                                    <td>
+                                        {% if vehicle.days_in_phase > 3 %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        {% elif vehicle.days_in_phase > 2 %}
+                                        <span class="badge bg-warning">At Risk</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('workflow_board') }}#vehicle-{{ vehicle.id }}" 
+                                           class="btn btn-sm btn-primary">View Details</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase Distribution -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Current Phase Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for phase, stats in phase_stats.items() %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100 {% if stats.over_3days > 0 %}border-warning{% endif %}">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ phase|title }}</h6>
+                                    <p class="h3 mb-2">{{ stats.count }} vehicles</p>
+                                    <div class="small">
+                                        <div class="text-muted">Average time: {{ "%.1f"|format(stats.avg_time) }} days</div>
+                                        {% if stats.over_3days > 0 %}
+                                        <div class="text-danger">{{ stats.over_3days }} over 3 days</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
